@@ -19,6 +19,20 @@ export type AdminDocumentItem = {
   delete_reason?: string | null;
 };
 
+export type AdminDocumentDetail = {
+  item: AdminDocumentItem;
+  snapshot_count: number;
+  latest_snapshot_at?: string | null;
+};
+
+export type AdminDocumentSnapshotItem = {
+  id: number;
+  snapshot_hash: string;
+  char_count: number;
+  size_bytes: number;
+  created_at: string;
+};
+
 export type AdminSignalingUrlItem = {
   id: number;
   url: string;

@@ -94,12 +94,17 @@ Exit codes:
 
 - Login page: `/admin/login`
 - Console page: `/admin`
+- Document history page: `/admin/documents/{docId}`
 - Uses backend `/api/admin/*` endpoints through the existing proxy route.
 - Admin auth is required only for admin pages. Document creation/editing remains public.
 - Signaling section supports:
   - persistent URL table (store/activate/deactivate/delete y-webrtc signaling URLs)
   - backend test (Python service-side connectivity)
   - frontend test (browser JavaScript connectivity)
+- Document history section supports:
+  - searchable/paged snapshot table
+  - snapshot binary download
+  - snapshot trend charts for char count and payload size
 
 ## Snapshot History Charts
 

@@ -401,6 +401,9 @@ export default function AdminConsolePage() {
                       <Link href={`/${d.id}`} className="rounded border border-slate-300 px-2 py-1 text-xs">
                         Open
                       </Link>
+                      <Link href={`/admin/documents/${d.id}`} className="rounded border border-slate-300 px-2 py-1 text-xs">
+                        History
+                      </Link>
                       {d.deleted_at ? (
                         <button
                           onClick={() => void restoreDoc(d.id)}
