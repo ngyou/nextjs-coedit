@@ -67,3 +67,25 @@ Backend exposes SSE signaling routes (`/api/signal/...`), but current frontend r
 - Production:
   - Use `wss://` signaling URLs.
   - Prefer Ably token auth from backend instead of exposing a root API key.
+
+## Signaling Connectivity Test
+
+Run a standalone signaling check:
+
+```bash
+node test-signaling.js <wss-url>
+```
+
+If `<wss-url>` is omitted, the script uses the first URL from `NEXT_PUBLIC_YJS_SIGNALING` in `.env`.
+
+It reports:
+
+- WebSocket connection time
+- Room join acknowledgement for `__connectivity_test__`
+- Whether another peer is present (or timeout cleanly)
+- Clean disconnect
+
+Exit codes:
+
+- `0`: success
+- `1`: failure
