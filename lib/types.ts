@@ -1,7 +1,7 @@
 import type * as Y from "yjs";
 import type { WebrtcProvider } from "y-webrtc";
 import type { IndexeddbPersistence } from "y-indexeddb";
-import type { Awareness } from "y-protocols/awareness";
+import type { Awareness } from "y-protocols/awareness.js";
 
 export type SaveStatus = "saved" | "saving" | "unsaved";
 
@@ -27,4 +27,3 @@ export type PresenceUser = {
   clientId: number;
   name: string;
 };
-
