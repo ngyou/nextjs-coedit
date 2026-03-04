@@ -96,3 +96,7 @@ Exit codes:
 - Console page: `/admin`
 - Uses backend `/api/admin/*` endpoints through the existing proxy route.
 - Admin auth is required only for admin pages. Document creation/editing remains public.
+- Signaling section supports:
+  - persistent URL table (store/activate/deactivate/delete y-webrtc signaling URLs)
+  - backend test (Python service-side connectivity)
+  - frontend test (browser JavaScript connectivity)

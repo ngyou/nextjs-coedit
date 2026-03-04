@@ -19,6 +19,28 @@ export type AdminDocumentItem = {
   delete_reason?: string | null;
 };
 
+export type AdminSignalingUrlItem = {
+  id: number;
+  url: string;
+  label?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_tested_at?: string | null;
+  last_test_source?: string | null;
+  last_test_ok?: boolean | null;
+  last_test_connect_ms?: number | null;
+  last_test_detail?: string | null;
+};
+
+export type AdminSignalingTestItem = {
+  url: string;
+  ok: boolean;
+  connect_ms?: number | null;
+  detail: string;
+  source: "backend" | "frontend";
+};
+
 const ADMIN_TOKEN_KEY = "coedit_admin_token";
 
 export function getAdminToken(): string {
