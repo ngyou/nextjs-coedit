@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# nextjs-coedit
 
-## Getting Started
+Collaborative editor frontend built with Next.js + Yjs.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Copy `.env.example` to `.env`.
+2. Install dependencies:
+   - `pnpm install`
+3. Start dev server:
+   - `pnpm dev`
+4. Open `http://localhost:3000`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `API_URL`
+  - Backend proxy target used by `app/api/[...path]/route.ts`.
+  - Example: `http://localhost:8000/api`
+- `NEXT_PUBLIC_APP_URL`
+  - Public app URL used in share links.
+- `NEXT_PUBLIC_YJS_SIGNALING`
+  - Comma-separated WebSocket signaling URLs for `y-webrtc`.
+  - Example: `wss://signal.example.com`
+- `NEXT_PUBLIC_ABLY_API_KEY`
+  - Optional Ably key used as realtime relay fallback path.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Realtime Transport Logic
 
-## Learn More
+The editor can use two realtime paths:
 
-To learn more about Next.js, take a look at the following resources:
+1. WebRTC via `y-webrtc` (primary)
+2. Ably pub/sub relay (fallback path when key is configured)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 1) `NEXT_PUBLIC_YJS_SIGNALING` (WebRTC signaling)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Purpose: peer discovery for WebRTC.
+- `y-webrtc` needs a signaling server to exchange SDP/ICE metadata before direct peer connection is possible.
+- Signaling server endpoints must be WebSocket URLs (`ws://` or `wss://`).
 
-## Deploy on Vercel
+Why `wss://` in production:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Browsers enforce secure context rules.
+- HTTPS pages commonly block insecure `ws://` mixed content.
+- `wss://` is the safe default for deployed environments.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 2) `NEXT_PUBLIC_ABLY_API_KEY` (Ably relay fallback)
+
+- If set, frontend also connects to Ably channel `coedit:{docId}`.
+- It relays:
+  - Yjs document updates
+  - Yjs full sync snapshot on join
+  - Yjs awareness/presence updates
+- This provides an alternate realtime path when WebRTC signaling/connectivity is unreliable.
+
+## Backend SSE Role
+
+Backend exposes SSE signaling routes (`/api/signal/...`), but current frontend runtime does not use SSE as an active transport in `createCollabRuntime`.
+
+- Current active frontend paths: WebRTC (`NEXT_PUBLIC_YJS_SIGNALING`) + optional Ably relay (`NEXT_PUBLIC_ABLY_API_KEY`).
+- SSE can be integrated later with a custom Yjs transport adapter if needed.
+
+## Practical Configuration
+
+- Local/dev quick start:
+  - Set `NEXT_PUBLIC_YJS_SIGNALING` to a working signaling WS endpoint.
+  - Optionally set `NEXT_PUBLIC_ABLY_API_KEY` for relay fallback.
+- Production:
+  - Use `wss://` signaling URLs.
+  - Prefer Ably token auth from backend instead of exposing a root API key.

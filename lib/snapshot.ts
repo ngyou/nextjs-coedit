@@ -17,6 +17,7 @@ export async function saveSnapshot(opts: {
 }) {
   const { docId, ydoc, charCount, token } = opts;
   const payload = Y.encodeStateAsUpdate(ydoc);
+  const body = new Uint8Array(payload).buffer;
   const headers: Record<string, string> = {
     "Content-Type": "application/octet-stream",
     "X-Char-Count": String(charCount),
@@ -26,7 +27,7 @@ export async function saveSnapshot(opts: {
   const response = await fetch(`/api/docs/${encodeURIComponent(docId)}/snapshot`, {
     method: "PUT",
     headers,
-    body: payload,
+    body,
     cache: "no-store",
   });
 
@@ -44,7 +45,7 @@ export function sendBeaconSnapshot(opts: {
   const { docId, ydoc } = opts;
   const payload = Y.encodeStateAsUpdate(ydoc);
   const url = `/api/docs/${encodeURIComponent(docId)}/snapshot`;
-  const blob = new Blob([payload], { type: "application/octet-stream" });
+  const blob = new Blob([new Uint8Array(payload)], { type: "application/octet-stream" });
   if (!("sendBeacon" in navigator)) return false;
   return navigator.sendBeacon(url, blob);
 }

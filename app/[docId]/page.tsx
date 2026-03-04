@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CharLimitModal } from "@/components/editor/CharLimitModal";
 import { CollabEditor } from "@/components/editor/CollabEditor";
@@ -31,6 +31,10 @@ export default function DocPage() {
   const router = useRouter();
   const docId = useMemo(() => (params.docId ?? "").toUpperCase(), [params.docId]);
   const validDocId = /^[A-Z2-9]{5,8}$/.test(docId);
+  const relayHint = useMemo(
+    () => (process.env.NEXT_PUBLIC_ABLY_API_KEY ? "Ably relay fallback enabled" : "WebRTC signaling only"),
+    [],
+  );
 
   const [name, setName] = useState<string | null>(null);
   const [meta, setMeta] = useState<DocumentMeta | null>(null);
@@ -45,6 +49,7 @@ export default function DocPage() {
   const [deleteErr, setDeleteErr] = useState("");
   const [showLimit, setShowLimit] = useState(false);
   const [softWarned, setSoftWarned] = useState(false);
+  const runtimeRef = useRef<CollabRuntime | null>(null);
 
   useEffect(() => {
     if (!validDocId) return;
@@ -80,29 +85,44 @@ export default function DocPage() {
   }, [meta, token]);
 
   useEffect(() => {
-    if (!meta || !unlocked || !name || runtime) return;
+    if (!meta || !unlocked || !name || runtimeRef.current) return;
+
+    let cancelled = false;
+    const created = createCollabRuntime(docId, name);
+    runtimeRef.current = created;
 
     const run = async () => {
-      const created = createCollabRuntime(docId, name);
       try {
         await fetchSnapshot(docId, created.ydoc);
       } catch {
         // no snapshot yet
+      }
+      if (cancelled) {
+        created.destroy();
+        if (runtimeRef.current === created) runtimeRef.current = null;
+        return;
       }
       setRuntime(created);
     };
     void run();
 
     return () => {
-      if (runtime) runtime.destroy();
+      cancelled = true;
+      if (runtimeRef.current === created) runtimeRef.current = null;
+      created.destroy();
+      setRuntime((current) => (current === created ? null : current));
     };
-  }, [docId, meta, name, runtime, unlocked]);
+  }, [docId, meta, name, unlocked]);
 
   useEffect(() => {
     return () => {
-      if (runtime) runtime.destroy();
+      const current = runtimeRef.current;
+      if (current) {
+        current.destroy();
+        runtimeRef.current = null;
+      }
     };
-  }, [runtime]);
+  }, []);
 
   const users = usePresence(runtime?.awareness ?? null);
 
@@ -147,6 +167,8 @@ export default function DocPage() {
   };
 
   const onDocChanged = useCallback(() => setSaveStatus("unsaved"), []);
+  const onHardLimit = useCallback(() => setShowLimit(true), []);
+  const onSoftLimit = useCallback(() => setSoftWarned(true), []);
 
   if (!validDocId) {
     return (
@@ -169,8 +191,12 @@ export default function DocPage() {
 
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
+          <Link href="/" className="mb-1 inline-flex items-center rounded-full border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700">
+            COEDIT
+          </Link>
           <h1 className="font-mono text-2xl font-bold tracking-wide text-slate-900">{docId}</h1>
           <p className="text-xs text-slate-500">Realtime collaborative text editor</p>
+          <p className="text-xs text-slate-500">{relayHint}</p>
         </div>
         <div className="flex items-center gap-2">
           <AvatarStack users={users} />
@@ -196,8 +222,8 @@ export default function DocPage() {
           <CollabEditor
             runtime={runtime}
             onCharCount={setCharCount}
-            onHardLimit={() => setShowLimit(true)}
-            onSoftLimit={() => setSoftWarned(true)}
+            onHardLimit={onHardLimit}
+            onSoftLimit={onSoftLimit}
             onDocChanged={onDocChanged}
           />
           <StatusBar

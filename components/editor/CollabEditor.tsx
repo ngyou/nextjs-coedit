@@ -48,7 +48,7 @@ export function CollabEditor({ runtime, onCharCount, onHardLimit, onSoftLimit, o
         keymap.of([...defaultKeymap, ...yUndoManagerKeymap]),
         EditorView.lineWrapping,
         charLimit,
-        yCollab(runtime.ytext, runtime.awareness, { yUndoManager }),
+        yCollab(runtime.ytext, runtime.awareness, { undoManager: yUndoManager }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onCharCount(update.state.doc.length);
@@ -70,4 +70,3 @@ export function CollabEditor({ runtime, onCharCount, onHardLimit, onSoftLimit, o
 
   return <div ref={hostRef} className="min-h-[65vh] w-full overflow-hidden rounded-xl border border-slate-200 bg-white" />;
 }
-
