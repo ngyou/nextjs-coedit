@@ -32,10 +32,6 @@ export default function DocPage() {
   const router = useRouter();
   const docId = useMemo(() => (params.docId ?? "").toUpperCase(), [params.docId]);
   const validDocId = /^[A-Z2-9]{5,8}$/.test(docId);
-  const relayHint = useMemo(
-    () => (process.env.NEXT_PUBLIC_ABLY_API_KEY ? "Ably relay fallback enabled" : "WebRTC signaling only"),
-    [],
-  );
 
   const [name, setName] = useState<string | null>(null);
   const [meta, setMeta] = useState<DocumentMeta | null>(null);
@@ -52,6 +48,16 @@ export default function DocPage() {
   const [softWarned, setSoftWarned] = useState(false);
   const [localEdits, setLocalEdits] = useState<Array<{ ts: number; charCount: number }>>([]);
   const runtimeRef = useRef<CollabRuntime | null>(null);
+  const relayHint = useMemo(() => {
+    const ablyConfigured = Boolean(process.env.NEXT_PUBLIC_ABLY_API_KEY);
+    if (!runtime) {
+      return ablyConfigured ? "WebRTC + Ably fallback available" : "WebRTC signaling only";
+    }
+    const mode = runtime.getTransportMode();
+    if (mode === "both") return "Transport active: WebRTC + Ably";
+    if (mode === "ably") return "Transport active: Ably relay";
+    return ablyConfigured ? "Transport active: WebRTC (Ably standby)" : "Transport active: WebRTC";
+  }, [runtime]);
 
   useEffect(() => {
     if (!validDocId) return;

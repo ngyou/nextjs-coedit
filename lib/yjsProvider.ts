@@ -12,7 +12,6 @@ const ABLY_MSG_UPDATE = "y-update";
 const ABLY_MSG_SYNC = "y-sync";
 const ABLY_MSG_AWARENESS = "y-awareness";
 const ABLY_REMOTE_ORIGIN = Symbol("ably-remote");
-const FALLBACK_TIMEOUT_MS = 8_000;
 const SIGNALING_DIAG_INTERVAL_MS = 1_000;
 const PUBLIC_SIGNALING_HOSTS = new Set(["signaling.yjs.dev", "y-webrtc-eu.fly.dev"]);
 
@@ -193,15 +192,12 @@ export function createCollabRuntime(docId: string, name: string): CollabRuntime 
   webrtc.on("peers", onPeers);
   logTransportMode();
 
-  let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
   let signalingDiagTimer: ReturnType<typeof setInterval> | null = null;
 
   if (ablyKey) {
-    fallbackTimer = setTimeout(() => {
-      if (!hasWebrtcPeers) {
-        activateAbly("no peers connected within 8s");
-      }
-    }, FALLBACK_TIMEOUT_MS);
+    if (!signalingServers.length) {
+      activateAbly("no signaling servers configured");
+    }
 
     signalingDiagTimer = setInterval(() => {
       if (hasWebrtcPeers || ablyActive || !signalingServers.length) return;
@@ -219,10 +215,6 @@ export function createCollabRuntime(docId: string, name: string): CollabRuntime 
   }
 
   const destroy = () => {
-    if (fallbackTimer) {
-      clearTimeout(fallbackTimer);
-      fallbackTimer = null;
-    }
     if (signalingDiagTimer) {
       clearInterval(signalingDiagTimer);
       signalingDiagTimer = null;
