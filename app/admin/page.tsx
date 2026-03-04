@@ -8,7 +8,6 @@ import {
   adminFetch,
   getAdminToken,
   setAdminToken,
-  type AdminDocumentItem,
   type AdminSessionItem,
   type AdminSignalingTestItem,
   type AdminSignalingUrlItem,
@@ -105,11 +104,8 @@ export default function AdminConsolePage() {
   const router = useRouter();
   const [authReady, setAuthReady] = useState(false);
   const [sessions, setSessions] = useState<AdminSessionItem[]>([]);
-  const [docs, setDocs] = useState<AdminDocumentItem[]>([]);
   const [signalingUrls, setSignalingUrls] = useState<AdminSignalingUrlItem[]>([]);
   const [signalResults, setSignalResults] = useState<AdminSignalingTestItem[]>([]);
-  const [docQuery, setDocQuery] = useState("");
-  const [includeDeleted, setIncludeDeleted] = useState(true);
   const [newSignalUrl, setNewSignalUrl] = useState("");
   const [newSignalLabel, setNewSignalLabel] = useState("");
   const [error, setError] = useState("");
@@ -130,21 +126,16 @@ export default function AdminConsolePage() {
     setBusy(true);
     setError("");
     try {
-      const [sessionRes, docRes, signalRes] = await Promise.all([
+      const [sessionRes, signalRes] = await Promise.all([
         adminFetch("/api/admin/sessions"),
-        adminFetch(
-          `/api/admin/documents?limit=100&offset=0&include_deleted=${includeDeleted ? "true" : "false"}&q=${encodeURIComponent(docQuery)}`,
-        ),
         adminFetch("/api/admin/signaling/urls"),
       ]);
-      if (!withAuth(sessionRes) || !withAuth(docRes) || !withAuth(signalRes)) return;
-      if (!sessionRes.ok || !docRes.ok || !signalRes.ok) throw new Error("Failed loading admin data");
+      if (!withAuth(sessionRes) || !withAuth(signalRes)) return;
+      if (!sessionRes.ok || !signalRes.ok) throw new Error("Failed loading admin data");
 
       const sessionData = (await sessionRes.json()) as { sessions: AdminSessionItem[] };
-      const docData = (await docRes.json()) as { items: AdminDocumentItem[] };
       const signalData = (await signalRes.json()) as { items: AdminSignalingUrlItem[] };
       setSessions(sessionData.sessions);
-      setDocs(docData.items);
       setSignalingUrls(signalData.items);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed loading admin data");
@@ -264,28 +255,6 @@ export default function AdminConsolePage() {
     void loadData();
   };
 
-  const deleteDoc = async (id: string, hard: boolean) => {
-    const res = await adminFetch(`/api/admin/documents/${encodeURIComponent(id)}?hard=${hard ? "true" : "false"}`, {
-      method: "DELETE",
-    });
-    if (!withAuth(res)) return;
-    if (!res.ok) {
-      setError(`Failed deleting ${id}`);
-      return;
-    }
-    void loadData();
-  };
-
-  const restoreDoc = async (id: string) => {
-    const res = await adminFetch(`/api/admin/documents/${encodeURIComponent(id)}/restore`, { method: "POST" });
-    if (!withAuth(res)) return;
-    if (!res.ok) {
-      setError(`Failed restoring ${id}`);
-      return;
-    }
-    void loadData();
-  };
-
   if (!authReady) return null;
 
   return (
@@ -293,9 +262,12 @@ export default function AdminConsolePage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold text-slate-900">Admin Console</h1>
-          <p className="text-sm text-slate-600">Manage sessions, documents, and signaling connectivity tests.</p>
+          <p className="text-sm text-slate-600">Manage active sessions and signaling connectivity tests.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/admin/docs" className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            Documents
+          </Link>
           <Link href="/" className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
             Home
           </Link>
@@ -348,91 +320,6 @@ export default function AdminConsolePage() {
                 <tr>
                   <td className="py-3 text-slate-500" colSpan={5}>
                     No active sessions
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold text-slate-900">Documents</h2>
-          <input
-            value={docQuery}
-            onChange={(e) => setDocQuery(e.target.value)}
-            placeholder="Search by ID"
-            className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
-          />
-          <label className="text-sm text-slate-700">
-            <input
-              className="mr-1"
-              type="checkbox"
-              checked={includeDeleted}
-              onChange={(e) => setIncludeDeleted(e.target.checked)}
-            />
-            Include deleted
-          </label>
-          <button onClick={() => void loadData()} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm">
-            Apply
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="text-slate-500">
-              <tr>
-                <th className="py-2">ID</th>
-                <th className="py-2">Chars</th>
-                <th className="py-2">Updated</th>
-                <th className="py-2">Deleted</th>
-                <th className="py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {docs.map((d) => (
-                <tr key={d.id} className="border-t border-slate-100">
-                  <td className="py-2 font-mono">{d.id}</td>
-                  <td className="py-2">{d.char_count}</td>
-                  <td className="py-2">{new Date(d.updated_at).toLocaleString()}</td>
-                  <td className="py-2">{d.deleted_at ? new Date(d.deleted_at).toLocaleString() : "-"}</td>
-                  <td className="py-2">
-                    <div className="flex gap-2">
-                      <Link href={`/${d.id}`} className="rounded border border-slate-300 px-2 py-1 text-xs">
-                        Open
-                      </Link>
-                      <Link href={`/admin/documents/${d.id}`} className="rounded border border-slate-300 px-2 py-1 text-xs">
-                        History
-                      </Link>
-                      {d.deleted_at ? (
-                        <button
-                          onClick={() => void restoreDoc(d.id)}
-                          className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-700"
-                        >
-                          Restore
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => void deleteDoc(d.id, false)}
-                          className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-700"
-                        >
-                          Soft Delete
-                        </button>
-                      )}
-                      <button
-                        onClick={() => void deleteDoc(d.id, true)}
-                        className="rounded border border-red-300 px-2 py-1 text-xs text-red-700"
-                      >
-                        Hard Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!docs.length ? (
-                <tr>
-                  <td className="py-3 text-slate-500" colSpan={5}>
-                    No documents found
                   </td>
                 </tr>
               ) : null}

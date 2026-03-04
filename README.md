@@ -94,7 +94,8 @@ Exit codes:
 
 - Login page: `/admin/login`
 - Console page: `/admin`
-- Document history page: `/admin/documents/{docId}`
+- Documents page: `/admin/docs`
+- Document history page: `/admin/docs/{docId}`
 - Uses backend `/api/admin/*` endpoints through the existing proxy route.
 - Admin auth is required only for admin pages. Document creation/editing remains public.
 - Signaling section supports:
@@ -103,7 +104,7 @@ Exit codes:
   - frontend test (browser JavaScript connectivity)
 - Document history section supports:
   - searchable/paged snapshot table
-  - snapshot binary download
+  - decoded historical snapshot content preview
   - snapshot trend charts for char count and payload size
 
 ## Snapshot History Charts
