@@ -47,6 +47,22 @@ export function CollabEditor({ runtime, onCharCount, onHardLimit, onSoftLimit, o
         lineNumbers(),
         keymap.of([...defaultKeymap, ...yUndoManagerKeymap]),
         EditorView.lineWrapping,
+        EditorView.theme({
+          "&": {
+            height: "100%",
+            width: "100%",
+          },
+          ".cm-scroller": {
+            minHeight: "100%",
+            overflow: "auto",
+          },
+          ".cm-content, .cm-gutter": {
+            minHeight: "100%",
+          },
+          ".cm-content": {
+            paddingBottom: "1.5rem",
+          },
+        }),
         charLimit,
         yCollab(runtime.ytext, runtime.awareness, { undoManager: yUndoManager }),
         EditorView.updateListener.of((update) => {
@@ -68,5 +84,11 @@ export function CollabEditor({ runtime, onCharCount, onHardLimit, onSoftLimit, o
     };
   }, [onCharCount, onDocChanged, onHardLimit, onSoftLimit, runtime]);
 
-  return <div ref={hostRef} className="min-h-[65vh] w-full overflow-hidden rounded-xl border border-slate-200 bg-white" />;
+  return (
+    <div
+      ref={hostRef}
+      onMouseDown={() => viewRef.current?.focus()}
+      className="h-[clamp(20rem,65vh,52rem)] w-full max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white"
+    />
+  );
 }

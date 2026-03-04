@@ -238,7 +238,7 @@ export default function DocPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-4 sm:px-4 md:px-6">
       {name === "" ? <NamePrompt onComplete={setName} /> : null}
       {!unlocked && meta?.has_password ? <PasswordModal onSubmit={onAuth} error={authErr} /> : null}
       {showShare ? <ShareModal docId={docId} onClose={() => setShowShare(false)} /> : null}
