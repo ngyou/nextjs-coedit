@@ -48,15 +48,14 @@ export default function DocPage() {
   const [softWarned, setSoftWarned] = useState(false);
   const [localEdits, setLocalEdits] = useState<Array<{ ts: number; charCount: number }>>([]);
   const runtimeRef = useRef<CollabRuntime | null>(null);
-  const relayHint = useMemo(() => {
+  const transportStatus = useMemo(() => {
     const ablyConfigured = Boolean(process.env.NEXT_PUBLIC_ABLY_API_KEY);
-    if (!runtime) {
-      return ablyConfigured ? "WebRTC + Ably fallback available" : "WebRTC signaling only";
-    }
-    const mode = runtime.getTransportMode();
-    if (mode === "both") return "Transport active: WebRTC + Ably";
-    if (mode === "ably") return "Transport active: Ably relay";
-    return ablyConfigured ? "Transport active: WebRTC (Ably standby)" : "Transport active: WebRTC";
+    const mode = runtime?.getTransportMode();
+    return {
+      webRtcEnabled: mode === "webrtc" || mode === "both",
+      ablyEnabled: mode === "ably" || mode === "both",
+      ablyConfigured,
+    };
   }, [runtime]);
 
   useEffect(() => {
@@ -258,7 +257,31 @@ export default function DocPage() {
           </Link>
           <h1 className="font-mono text-2xl font-bold tracking-wide text-slate-900">{docId}</h1>
           <p className="text-xs text-slate-500">Realtime collaborative text editor</p>
-          <p className="text-xs text-slate-500">{relayHint}</p>
+          <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${
+                transportStatus.webRtcEnabled
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                  : "border-slate-300 bg-slate-100 text-slate-600"
+              }`}
+            >
+              WebRTC: {transportStatus.webRtcEnabled ? "enabled" : "not enabled"}
+            </span>
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${
+                transportStatus.ablyEnabled
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                  : "border-slate-300 bg-slate-100 text-slate-600"
+              }`}
+            >
+              Ably:{" "}
+              {transportStatus.ablyConfigured
+                ? transportStatus.ablyEnabled
+                  ? "enabled"
+                  : "not enabled"
+                : "not configured"}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <AvatarStack users={users} />
