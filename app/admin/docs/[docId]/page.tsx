@@ -277,77 +277,69 @@ export default function AdminDocumentHistoryPage() {
           </article>
         </div>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="text-slate-500">
-              <tr>
-                <th className="py-2">Snapshot ID</th>
-                <th className="py-2">Created</th>
-                <th className="py-2">Char Count</th>
-                <th className="py-2">Size</th>
-                <th className="py-2">Hash</th>
-                <th className="py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item) => (
-                <tr
-                  key={item.id}
-                  className={`border-t border-slate-100 ${selectedId === item.id ? "bg-slate-50" : ""}`}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  <td className="py-2 font-mono">{item.id}</td>
-                  <td className="py-2">{new Date(item.created_at).toLocaleString()}</td>
-                  <td className="py-2">{item.char_count}</td>
-                  <td className="py-2">{formatBytes(item.size_bytes)}</td>
-                  <td className="py-2 font-mono text-xs">{item.snapshot_hash}</td>
-                  <td className="py-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedId(item.id);
-                      }}
-                      className="rounded border border-slate-300 px-2 py-1 text-xs"
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {!filtered.length ? (
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <article className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead className="text-slate-500">
                 <tr>
-                  <td className="py-3 text-slate-500" colSpan={6}>
-                    No snapshots found
-                  </td>
+                  <th className="py-2 pl-3">Snapshot ID</th>
+                  <th className="py-2">Created</th>
+                  <th className="py-2">Char Count</th>
+                  <th className="py-2 pr-3">Size</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={`cursor-pointer border-t border-slate-100 ${selectedId === item.id ? "bg-slate-50" : ""}`}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    <td className="py-2 pl-3 font-mono">{item.id}</td>
+                    <td className="py-2">{new Date(item.created_at).toLocaleString()}</td>
+                    <td className="py-2">{item.char_count}</td>
+                    <td className="py-2 pr-3">{formatBytes(item.size_bytes)}</td>
+                  </tr>
+                ))}
+                {!filtered.length ? (
+                  <tr>
+                    <td className="py-3 pl-3 text-slate-500" colSpan={4}>
+                      No snapshots found
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </article>
 
-        {selected ? (
-          <aside className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-            <p className="font-semibold text-slate-900">Selected Snapshot</p>
-            <p>
-              Snapshot ID: <span className="font-mono">{selected.id}</span>
-            </p>
-            <p>Timestamp: {new Date(selected.created_at).toLocaleString()}</p>
-            <p>Char Count: {selected.char_count}</p>
-            <p>Payload Size: {formatBytes(selected.size_bytes)}</p>
-            <p className="break-all font-mono text-xs">Hash: {selected.snapshot_hash}</p>
+          <aside className="sticky top-6 self-start rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            <p className="font-semibold text-slate-900">Snapshot Preview</p>
+            {selected ? (
+              <>
+                <p>
+                  Snapshot ID: <span className="font-mono">{selected.id}</span>
+                </p>
+                <p>Timestamp: {new Date(selected.created_at).toLocaleString()}</p>
+                <p>Char Count: {selected.char_count}</p>
+                <p>Payload Size: {formatBytes(selected.size_bytes)}</p>
+                <p className="break-all font-mono text-xs">Hash: {selected.snapshot_hash}</p>
+              </>
+            ) : (
+              <p className="text-xs text-slate-500">Select a snapshot to preview content.</p>
+            )}
 
             <div className="mt-3">
               <p className="mb-1 font-semibold text-slate-900">Historical Content</p>
               {previewLoading ? <p className="text-xs text-slate-500">Loading snapshot preview...</p> : null}
               {previewError ? <p className="text-xs text-red-700">{previewError}</p> : null}
-              {!previewLoading && !previewError ? (
-                <pre className="max-h-96 overflow-auto rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-800">
+              {selected && !previewLoading && !previewError ? (
+                <pre className="max-h-[32rem] overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words rounded-md border border-slate-200 bg-white p-3 font-mono text-xs text-slate-800">
                   {selectedPreview || "(empty document)"}
                 </pre>
               ) : null}
             </div>
           </aside>
-        ) : null}
+        </div>
       </section>
     </main>
   );
