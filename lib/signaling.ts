@@ -1,3 +1,6 @@
+// DEPRECATED: This SSE signaling relay is no longer the active path.
+// Retained for reference. Will be removed in a future cleanup.
+
 export type SignalMessage = Record<string, unknown>;
 
 type OnMessage = (msg: SignalMessage) => void;
@@ -15,6 +18,7 @@ export class SSESignalingProvider {
 
   connect() {
     if (this.eventSource) return;
+    console.warn("[DEPRECATED] SSE signaling endpoint in use. Prefer WebRTC signaling or Ably fallback.");
     this.eventSource = new EventSource(
       `/api/signal/${encodeURIComponent(this.docId)}/listen?peer_id=${encodeURIComponent(this.peerId)}`,
     );
@@ -35,6 +39,7 @@ export class SSESignalingProvider {
   }
 
   async send(message: SignalMessage) {
+    console.warn("[DEPRECATED] SSE signaling endpoint in use. Prefer WebRTC signaling or Ably fallback.");
     await fetch(`/api/signal/${encodeURIComponent(this.docId)}/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,4 +55,3 @@ export class SSESignalingProvider {
     };
   }
 }
-
