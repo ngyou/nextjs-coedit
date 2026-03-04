@@ -33,4 +33,6 @@ export type CollabRuntime = {
 export type PresenceUser = {
   clientId: number;
   name: string;
+  peerId?: string;
+  isSelf: boolean;
 };
