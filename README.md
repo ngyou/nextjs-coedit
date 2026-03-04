@@ -1,6 +1,6 @@
 # nextjs-coedit
 
-Collaborative editor frontend built with Next.js + Yjs.
+Collaborative editor frontend built with Next.js App Router, CodeMirror 6, and Yjs.
 
 ## Setup
 
@@ -14,145 +14,118 @@ Collaborative editor frontend built with Next.js + Yjs.
 ## Environment Variables
 
 - `API_URL`
-  - Backend proxy target used by `app/api/[...path]/route.ts`.
+  - Server-side proxy target used by `app/api/[...path]/route.ts`.
   - Example: `http://localhost:8000/api`
 - `NEXT_PUBLIC_APP_URL`
-  - Public app URL used in share links.
+  - Public app base URL used for sharing links.
 - `NEXT_PUBLIC_YJS_SIGNALING`
-  - Comma-separated WebSocket signaling URLs for `y-webrtc`.
-  - Example: `wss://signal.example.com`
+  - Comma-separated signaling URLs for `y-webrtc`.
+  - Must be `ws://` or `wss://`.
+  - Example: `ws://localhost:4444,wss://signal.example.com`
 - `NEXT_PUBLIC_ABLY_API_KEY`
-  - Optional Ably key used as realtime relay fallback path.
+  - Optional Ably key for realtime fallback transport.
 
-## Realtime Transport Logic
+## Realtime Transport Behavior
 
-The editor can use two realtime paths:
+The editor always creates a single shared `Y.Doc` per document tab.
 
-1. WebRTC via `y-webrtc` (primary)
-2. Ably pub/sub relay (fallback path when key is configured)
+Transport path:
 
-### 1) `NEXT_PUBLIC_YJS_SIGNALING` (WebRTC signaling)
+1. Try WebRTC (`y-webrtc`) first.
+2. If no peer is connected after 8 seconds, enable Ably fallback (if key is set).
+3. If signaling appears failed (reconnect failures and no connected signaling socket), enable Ably fallback.
+4. If WebRTC later gets peers while Ably is active, both can run together against the same `Y.Doc`.
 
-- Purpose: peer discovery for WebRTC.
-- `y-webrtc` needs a signaling server to exchange SDP/ICE metadata before direct peer connection is possible.
-- Signaling server endpoints must be WebSocket URLs (`ws://` or `wss://`).
+Console diagnostics:
 
-Why `wss://` in production:
+- Active transport mode log: `webrtc` / `ably` / `both`
+- Validation warnings for invalid or missing `NEXT_PUBLIC_YJS_SIGNALING`
+- Warning when using public signaling hosts like `signaling.yjs.dev`
 
-- Browsers enforce secure context rules.
-- HTTPS pages commonly block insecure `ws://` mixed content.
-- `wss://` is the safe default for deployed environments.
+## Running a Local `y-webrtc-signaling` Server
 
-### 2) `NEXT_PUBLIC_ABLY_API_KEY` (Ably relay fallback)
-
-- If set, frontend also connects to Ably channel `coedit:{docId}`.
-- It relays:
-  - Yjs document updates
-  - Yjs full sync snapshot on join
-  - Yjs awareness/presence updates
-- This provides an alternate realtime path when WebRTC signaling/connectivity is unreliable.
-
-## Backend SSE Role
-
-Backend exposes SSE signaling routes (`/api/signal/...`), but current frontend runtime does not use SSE as an active transport in `createCollabRuntime`.
-
-- Current active frontend paths: WebRTC (`NEXT_PUBLIC_YJS_SIGNALING`) + optional Ably relay (`NEXT_PUBLIC_ABLY_API_KEY`).
-- SSE can be integrated later with a custom Yjs transport adapter if needed.
-
-## Practical Configuration
-
-- Local/dev quick start:
-  - Set `NEXT_PUBLIC_YJS_SIGNALING` to a working signaling WS endpoint.
-  - Optionally set `NEXT_PUBLIC_ABLY_API_KEY` for relay fallback.
-- Production:
-  - Use `wss://` signaling URLs.
-  - Prefer Ably token auth from backend instead of exposing a root API key.
-
-## Run Your Own `y-webrtc-signaling`
-
-Install signaling server CLI:
+Install:
 
 ```bash
 npm install -g y-webrtc
 ```
 
-Start a local signaling service on port `4444`:
+Run (CLI flag):
 
 ```bash
 y-webrtc-signaling --port 4444
 ```
 
-PowerShell example:
+Run (PowerShell env var):
 
 ```powershell
 $env:PORT=4444; y-webrtc-signaling
 ```
 
-Set frontend env:
+Then set:
 
 ```env
 NEXT_PUBLIC_YJS_SIGNALING=ws://localhost:4444
 ```
 
-Use `wss://` in production (for HTTPS sites and browser mixed-content rules).
+Use `wss://` in production when your app is served over HTTPS.
 
-## Can I Add CORS Checks To `y-webrtc-signaling`?
+## CORS / Origin Notes for Signaling
 
-Short answer: not as traditional HTTP CORS.
+Traditional HTTP CORS is not a complete protection model for WebSocket signaling.
 
-- WebSocket handshakes are not protected by browser CORS preflight like `fetch/XHR`.
-- Browser clients still send an `Origin` header, but this is only one signal and is not a full auth mechanism.
-- Default `y-webrtc-signaling` CLI does not provide strong built-in origin/auth policy controls.
+- WebSocket handshake behavior differs from normal fetch/XHR CORS preflight.
+- `Origin` checks can help, but are not sufficient as sole access control.
+- For stronger protection, use one or more:
+  - reverse proxy origin allowlist
+  - auth/token gate
+  - private network/firewall controls
 
-Recommended controls:
+## Signaling Connectivity Test Script
 
-- Put signaling behind a reverse proxy (Nginx/Caddy/Traefik) and explicitly allow trusted `Origin` values.
-- Add authentication (token/API key) at proxy or a custom signaling server wrapper.
-- Restrict network access (firewall/private network/VPN) when possible.
-
-Conclusion: you can add origin filtering, but do not rely on CORS/origin checks alone to prevent abuse.
-
-## Signaling Connectivity Test
-
-Run a standalone signaling check:
+Run:
 
 ```bash
-node test-signaling.js <wss-url>
+node test-signaling.js <wss-or-ws-url>
 ```
 
-If `<wss-url>` is omitted, the script uses the first URL from `NEXT_PUBLIC_YJS_SIGNALING` in `.env`.
+If URL is omitted, script reads first URL from `NEXT_PUBLIC_YJS_SIGNALING` in `.env`.
 
-It reports:
+It checks:
 
-- WebSocket connection time
-- Room join acknowledgement for `__connectivity_test__`
-- Whether another peer is present (or timeout cleanly)
+- WebSocket connection established time
+- Room publish acknowledgement in `__connectivity_test__`
+- Peer presence (or timeout cleanly)
 - Clean disconnect
 
-Exit codes:
+Exit code:
 
-- `0`: success
-- `1`: failure
+- `0` success
+- `1` failure
 
-## Admin Console
+## Admin Console Routes
 
-- Login page: `/admin/login`
-- Console page: `/admin`
-- Documents page: `/admin/docs`
-- Document history page: `/admin/docs/{docId}`
-- Uses backend `/api/admin/*` endpoints through the existing proxy route.
-- Admin auth is required only for admin pages. Document creation/editing remains public.
-- Signaling section supports:
-  - persistent URL table (store/activate/deactivate/delete y-webrtc signaling URLs)
-  - backend test (Python service-side connectivity)
-  - frontend test (browser JavaScript connectivity)
-- Document history section supports:
-  - searchable/paged snapshot table
-  - decoded historical snapshot content preview
-  - snapshot trend charts for char count and payload size
+- Login: `/admin/login`
+- Console: `/admin`
+- Documents list: `/admin/docs`
+- Document history detail: `/admin/docs/{docId}`
 
-## Snapshot History Charts
+Admin-only features:
 
-- Document page autosaves every 30 seconds to backend snapshots.
-- Backend deduplicates snapshot inserts when the last 2 snapshots are the same payload hash.
-- Document page shows a compact frontend local edit timeline panel for the current browser session.
+- Active session list
+- Signaling URL table (create/update/activate/delete)
+- Signaling tests from backend (Python) and frontend (browser JS)
+- Snapshot history charts and historical snapshot content preview
+- Document soft/hard delete and restore
+
+Editing docs remains public; admin auth is only for admin routes.
+
+## Snapshot and Timeline UX
+
+- Frontend autosaves every 30 seconds using `PUT /api/docs/{docId}/snapshot`.
+- Backend snapshot dedupe: skip insert when last two snapshot hashes are both equal to current hash.
+- Editor page shows a compact non-sticky local edit timeline panel (recent edits only).
+
+## Deprecated SSE Signaling Path
+
+SSE signaling endpoints still exist on backend for reference but are deprecated and not the active collaboration transport.
