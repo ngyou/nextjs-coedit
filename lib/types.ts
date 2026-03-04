@@ -20,6 +20,7 @@ export type CollabRuntime = {
   indexeddb: IndexeddbPersistence;
   awareness: Awareness;
   peerId: string;
+  getTransportMode: () => "webrtc" | "ably" | "both";
   destroy: () => void;
 };
 

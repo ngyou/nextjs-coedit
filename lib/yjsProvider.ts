@@ -241,6 +241,7 @@ export function createCollabRuntime(docId: string, name: string): CollabRuntime 
     indexeddb,
     awareness: webrtc.awareness,
     peerId,
+    getTransportMode: () => lastTransportMode ?? "webrtc",
     destroy,
   };
 }

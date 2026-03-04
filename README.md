@@ -89,3 +89,10 @@ Exit codes:
 
 - `0`: success
 - `1`: failure
+
+## Admin Console
+
+- Login page: `/admin/login`
+- Console page: `/admin`
+- Uses backend `/api/admin/*` endpoints through the existing proxy route.
+- Admin auth is required only for admin pages. Document creation/editing remains public.

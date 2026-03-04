@@ -79,6 +79,11 @@ export default function HomePage() {
 
       <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Collaborative Editor</h1>
       <p className="mt-2 text-slate-600">Create a document and share the link for real-time editing.</p>
+      <p className="mt-1 text-sm text-slate-500">
+        <Link href="/admin/login" className="underline">
+          Admin console
+        </Link>
+      </p>
 
       <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <button

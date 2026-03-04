@@ -135,6 +135,57 @@ export default function DocPage() {
     onError: setError,
   });
 
+  useEffect(() => {
+    if (!runtime || !name) return;
+
+    const sessionId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+    let stopped = false;
+
+    const payload = () => ({
+      session_id: sessionId,
+      user_name: name,
+      transport: runtime.getTransportMode(),
+    });
+
+    const begin = async () => {
+      try {
+        await fetch(`/api/docs/${encodeURIComponent(docId)}/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload()),
+          keepalive: true,
+        });
+      } catch {
+        // best effort telemetry
+      }
+    };
+
+    void begin();
+
+    const timer = setInterval(() => {
+      if (stopped) return;
+      void fetch(`/api/docs/${encodeURIComponent(docId)}/sessions/${encodeURIComponent(sessionId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload()),
+        keepalive: true,
+      }).catch(() => {
+        // best effort telemetry
+      });
+    }, 15_000);
+
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+      void fetch(`/api/docs/${encodeURIComponent(docId)}/sessions/${encodeURIComponent(sessionId)}`, {
+        method: "DELETE",
+        keepalive: true,
+      }).catch(() => {
+        // best effort telemetry
+      });
+    };
+  }, [docId, name, runtime]);
+
   const onAuth = async (password: string) => {
     setAuthErr("");
     const res = await fetch(`/api/docs/${encodeURIComponent(docId)}/auth`, {
