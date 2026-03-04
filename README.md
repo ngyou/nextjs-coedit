@@ -100,3 +100,11 @@ Exit codes:
   - persistent URL table (store/activate/deactivate/delete y-webrtc signaling URLs)
   - backend test (Python service-side connectivity)
   - frontend test (browser JavaScript connectivity)
+
+## Snapshot History Charts
+
+- Document page autosaves every 30 seconds to backend snapshots.
+- Backend deduplicates snapshot inserts when the last 2 snapshots are the same payload hash.
+- Document page shows:
+  - saved snapshot history chart (timestamp vs char_count)
+  - frontend local edit timeline chart for current browser session

@@ -15,7 +15,7 @@ type Props = {
   onCharCount: (count: number) => void;
   onHardLimit: () => void;
   onSoftLimit: () => void;
-  onDocChanged: () => void;
+  onDocChanged: (count: number) => void;
 };
 
 export function CollabEditor({ runtime, onCharCount, onHardLimit, onSoftLimit, onDocChanged }: Props) {
@@ -52,7 +52,7 @@ export function CollabEditor({ runtime, onCharCount, onHardLimit, onSoftLimit, o
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onCharCount(update.state.doc.length);
-            onDocChanged();
+            onDocChanged(update.state.doc.length);
           }
         }),
       ],

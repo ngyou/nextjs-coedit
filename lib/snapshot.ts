@@ -1,5 +1,7 @@
 import * as Y from "yjs";
 
+import type { SnapshotHistoryItem } from "@/lib/types";
+
 export async function fetchSnapshot(docId: string, ydoc: Y.Doc): Promise<boolean> {
   const res = await fetch(`/api/docs/${encodeURIComponent(docId)}/snapshot`, { cache: "no-store" });
   if (!res.ok) return false;
@@ -9,12 +11,20 @@ export async function fetchSnapshot(docId: string, ydoc: Y.Doc): Promise<boolean
   return true;
 }
 
+export type SaveSnapshotResult = {
+  ok: boolean;
+  saved: boolean;
+  skipped_reason?: string;
+  snapshot_id?: number;
+  created_at?: string;
+};
+
 export async function saveSnapshot(opts: {
   docId: string;
   ydoc: Y.Doc;
   charCount: number;
   token?: string;
-}) {
+}): Promise<SaveSnapshotResult> {
   const { docId, ydoc, charCount, token } = opts;
   const payload = Y.encodeStateAsUpdate(ydoc);
   const body = new Uint8Array(payload).buffer;
@@ -35,6 +45,23 @@ export async function saveSnapshot(opts: {
     const reason = await response.text();
     throw new Error(reason || "Failed to save snapshot");
   }
+  return (await response.json()) as SaveSnapshotResult;
+}
+
+export async function fetchSnapshotHistory(opts: {
+  docId: string;
+  limit?: number;
+  token?: string;
+}): Promise<SnapshotHistoryItem[]> {
+  const headers: Record<string, string> = {};
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+  const res = await fetch(
+    `/api/docs/${encodeURIComponent(opts.docId)}/snapshot-history?limit=${opts.limit ?? 120}`,
+    { cache: "no-store", headers },
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as { items?: SnapshotHistoryItem[] };
+  return data.items ?? [];
 }
 
 export function sendBeaconSnapshot(opts: {

@@ -13,6 +13,12 @@ export type DocumentMeta = {
   updated_at: string;
 };
 
+export type SnapshotHistoryItem = {
+  id: number;
+  char_count: number;
+  created_at: string;
+};
+
 export type CollabRuntime = {
   ydoc: Y.Doc;
   ytext: Y.Text;

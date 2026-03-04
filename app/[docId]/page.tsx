@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CharLimitModal } from "@/components/editor/CharLimitModal";
 import { CollabEditor } from "@/components/editor/CollabEditor";
+import { EditHistoryCharts } from "@/components/editor/EditHistoryCharts";
 import { StatusBar } from "@/components/editor/StatusBar";
 import { AvatarStack } from "@/components/presence/AvatarStack";
 import { ShareModal } from "@/components/sharing/ShareModal";
@@ -14,8 +15,8 @@ import { getOrCreateLocalName, NamePrompt } from "@/components/ui/NamePrompt";
 import { PasswordModal } from "@/components/ui/PasswordModal";
 import { useAutosave } from "@/hooks/useAutosave";
 import { usePresence } from "@/hooks/usePresence";
-import { fetchSnapshot } from "@/lib/snapshot";
-import type { CollabRuntime, DocumentMeta, SaveStatus } from "@/lib/types";
+import { fetchSnapshot, fetchSnapshotHistory, type SaveSnapshotResult } from "@/lib/snapshot";
+import type { CollabRuntime, DocumentMeta, SaveStatus, SnapshotHistoryItem } from "@/lib/types";
 import { createCollabRuntime } from "@/lib/yjsProvider";
 
 const RECENT_KEY = "collab_recent_docs";
@@ -49,6 +50,8 @@ export default function DocPage() {
   const [deleteErr, setDeleteErr] = useState("");
   const [showLimit, setShowLimit] = useState(false);
   const [softWarned, setSoftWarned] = useState(false);
+  const [snapshotHistory, setSnapshotHistory] = useState<SnapshotHistoryItem[]>([]);
+  const [localEdits, setLocalEdits] = useState<Array<{ ts: number; charCount: number }>>([]);
   const runtimeRef = useRef<CollabRuntime | null>(null);
 
   useEffect(() => {
@@ -133,7 +136,37 @@ export default function DocPage() {
     getCharCount: () => charCount,
     onStatus: setSaveStatus,
     onError: setError,
+    onSaved: useCallback((result: SaveSnapshotResult) => {
+      if (result.saved && result.snapshot_id !== undefined && result.created_at) {
+        const snapshotId = result.snapshot_id;
+        const createdAt = result.created_at;
+        setSnapshotHistory((current) => {
+          if (current.some((item) => item.id === snapshotId)) return current;
+          return [...current, { id: snapshotId, char_count: charCount, created_at: createdAt }].slice(-240);
+        });
+      }
+    }, [charCount]),
   });
+
+  useEffect(() => {
+    if (!validDocId || !unlocked) return;
+    let stopped = false;
+
+    const load = async () => {
+      const items = await fetchSnapshotHistory({ docId, token, limit: 240 });
+      if (!stopped) setSnapshotHistory(items);
+    };
+    void load();
+
+    const timer = window.setInterval(() => {
+      void load();
+    }, 30_000);
+
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [docId, token, unlocked, validDocId]);
 
   useEffect(() => {
     if (!runtime || !name) return;
@@ -217,7 +250,10 @@ export default function DocPage() {
     router.push("/");
   };
 
-  const onDocChanged = useCallback(() => setSaveStatus("unsaved"), []);
+  const onDocChanged = useCallback((nextCharCount: number) => {
+    setSaveStatus("unsaved");
+    setLocalEdits((current) => [...current, { ts: Date.now(), charCount: nextCharCount }].slice(-240));
+  }, []);
   const onHardLimit = useCallback(() => setShowLimit(true), []);
   const onSoftLimit = useCallback(() => setSoftWarned(true), []);
 
@@ -283,6 +319,7 @@ export default function DocPage() {
             peerCount={users.length}
             updatedAt={meta?.updated_at}
           />
+          <EditHistoryCharts snapshots={snapshotHistory} localEdits={localEdits} />
         </>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-600">
