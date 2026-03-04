@@ -284,33 +284,38 @@ export default function DocPage() {
             onSoftLimit={onSoftLimit}
             onDocChanged={onDocChanged}
           />
-          <StatusBar
-            charCount={charCount}
-            saveStatus={saveStatus}
-            peerCount={users.length}
-            updatedAt={meta?.updated_at}
-          />
-          <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-            <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${
-                transportStatus.webRtcEnabled
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-slate-300 bg-slate-100 text-slate-600"
-              }`}
-            >
-              WebRTC
-            </span>
-            <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${
-                transportStatus.ablyEnabled
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-slate-300 bg-slate-100 text-slate-600"
-              }`}
-            >
-              Ably
-            </span>
-          </div>
-          <EditHistoryCharts localEdits={localEdits} />
+          <section className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <div className="rounded-xl border border-slate-200 bg-white p-2">
+              <StatusBar
+                charCount={charCount}
+                saveStatus={saveStatus}
+                peerCount={users.length}
+                updatedAt={meta?.updated_at}
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2 px-2 pb-1 text-[11px]">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Transport</span>
+                <span
+                  className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${
+                    transportStatus.webRtcEnabled
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                      : "border-slate-300 bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  WebRTC
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold ${
+                    transportStatus.ablyEnabled
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                      : "border-slate-300 bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  Ably
+                </span>
+              </div>
+            </div>
+            <EditHistoryCharts localEdits={localEdits} className="h-fit" />
+          </section>
         </>
       ) : (
         <div className="rounded-xl border border-slate-200 bg-white p-6 text-slate-600">

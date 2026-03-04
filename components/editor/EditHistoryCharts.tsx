@@ -9,6 +9,7 @@ type EditPoint = {
 
 type Props = {
   localEdits: EditPoint[];
+  className?: string;
 };
 
 type ChartPoint = {
@@ -40,24 +41,24 @@ function buildPoints(
   };
 }
 
-export function EditHistoryCharts({ localEdits }: Props) {
+export function EditHistoryCharts({ localEdits, className = "" }: Props) {
   const localSeries = useMemo(
     () => localEdits.slice(-40).map((item) => ({ ts: item.ts, value: item.charCount })),
     [localEdits],
   );
-  const width = 280;
-  const height = 88;
+  const width = 220;
+  const height = 62;
   const localPlot = useMemo(() => buildPoints(localSeries, width, height), [localSeries]);
   const latest = localEdits[localEdits.length - 1] ?? null;
 
   return (
-    <section className="mt-3 ml-auto w-full max-w-sm rounded-xl border border-slate-200 bg-slate-50 p-3">
+    <section className={`w-full rounded-xl border border-slate-200 bg-slate-50 p-3 ${className}`}>
       <article>
         <div className="mb-2 flex items-center justify-between gap-2">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-700">Frontend Edit Timeline</h2>
           <span className="text-[11px] text-slate-500">{localEdits.length} edits</span>
         </div>
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-24 w-full rounded-md border border-slate-200 bg-slate-50">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-16 w-full rounded-md border border-slate-200 bg-white">
           {localPlot.points ? (
             <>
               <polyline fill="none" stroke="#059669" strokeWidth="2" points={localPlot.points} />
@@ -68,7 +69,7 @@ export function EditHistoryCharts({ localEdits }: Props) {
               ))}
             </>
           ) : (
-            <text x="12" y="24" fill="#64748b" fontSize="12">
+            <text x="12" y="28" fill="#64748b" fontSize="12">
               Start typing to populate timeline
             </text>
           )}
