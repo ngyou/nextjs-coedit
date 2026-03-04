@@ -68,6 +68,50 @@ Backend exposes SSE signaling routes (`/api/signal/...`), but current frontend r
   - Use `wss://` signaling URLs.
   - Prefer Ably token auth from backend instead of exposing a root API key.
 
+## Run Your Own `y-webrtc-signaling`
+
+Install signaling server CLI:
+
+```bash
+npm install -g y-webrtc
+```
+
+Start a local signaling service on port `4444`:
+
+```bash
+y-webrtc-signaling --port 4444
+```
+
+PowerShell example:
+
+```powershell
+$env:PORT=4444; y-webrtc-signaling
+```
+
+Set frontend env:
+
+```env
+NEXT_PUBLIC_YJS_SIGNALING=ws://localhost:4444
+```
+
+Use `wss://` in production (for HTTPS sites and browser mixed-content rules).
+
+## Can I Add CORS Checks To `y-webrtc-signaling`?
+
+Short answer: not as traditional HTTP CORS.
+
+- WebSocket handshakes are not protected by browser CORS preflight like `fetch/XHR`.
+- Browser clients still send an `Origin` header, but this is only one signal and is not a full auth mechanism.
+- Default `y-webrtc-signaling` CLI does not provide strong built-in origin/auth policy controls.
+
+Recommended controls:
+
+- Put signaling behind a reverse proxy (Nginx/Caddy/Traefik) and explicitly allow trusted `Origin` values.
+- Add authentication (token/API key) at proxy or a custom signaling server wrapper.
+- Restrict network access (firewall/private network/VPN) when possible.
+
+Conclusion: you can add origin filtering, but do not rely on CORS/origin checks alone to prevent abuse.
+
 ## Signaling Connectivity Test
 
 Run a standalone signaling check:
@@ -111,6 +155,4 @@ Exit codes:
 
 - Document page autosaves every 30 seconds to backend snapshots.
 - Backend deduplicates snapshot inserts when the last 2 snapshots are the same payload hash.
-- Document page shows:
-  - saved snapshot history chart (timestamp vs char_count)
-  - frontend local edit timeline chart for current browser session
+- Document page shows a compact frontend local edit timeline panel for the current browser session.
