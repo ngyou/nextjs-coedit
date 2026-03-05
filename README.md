@@ -24,6 +24,9 @@ Collaborative editor frontend built with Next.js App Router, CodeMirror 6, and Y
   - Example: `ws://localhost:4444,wss://signal.example.com`
 - `NEXT_PUBLIC_ABLY_API_KEY`
   - Optional Ably key for realtime fallback transport.
+- `NEXT_PUBLIC_SNAPSHOT_CHECKPOINT_EVERY_N`
+  - Materialized full-text checkpoint cadence (default `20` if unset/invalid).
+  - Latest text is upserted for each saved snapshot; periodic checkpoints are marked every `N` snapshots.
 
 ## Realtime Transport Behavior
 
@@ -124,6 +127,9 @@ Editing docs remains public; admin auth is only for admin routes.
 
 - Frontend autosaves every 30 seconds using `PUT /api/docs/{docId}/snapshot`.
 - Backend snapshot dedupe: skip insert when last two snapshot hashes are both equal to current hash.
+- After a successful snapshot save, frontend upserts materialized text using `PUT /api/docs/{docId}/snapshot-materialized` with:
+  - `is_latest=true` on every saved snapshot
+  - `is_periodic_checkpoint=true` when `snapshot_id % NEXT_PUBLIC_SNAPSHOT_CHECKPOINT_EVERY_N === 0`
 - Editor page shows a compact non-sticky local edit timeline panel (recent edits only).
 
 ## Deprecated SSE Signaling Path

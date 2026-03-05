@@ -19,6 +19,11 @@ export type SaveSnapshotResult = {
   created_at?: string;
 };
 
+export type UpsertSnapshotMaterializedTextResult = {
+  ok: boolean;
+  unsupported?: boolean;
+};
+
 export async function saveSnapshot(opts: {
   docId: string;
   ydoc: Y.Doc;
@@ -46,6 +51,55 @@ export async function saveSnapshot(opts: {
     throw new Error(reason || "Failed to save snapshot");
   }
   return (await response.json()) as SaveSnapshotResult;
+}
+
+export async function upsertSnapshotMaterializedText(opts: {
+  docId: string;
+  snapshotId: number;
+  fullText: string;
+  charCount: number;
+  checkpointEveryN: number;
+  isPeriodicCheckpoint: boolean;
+  token?: string;
+}): Promise<UpsertSnapshotMaterializedTextResult> {
+  const {
+    docId,
+    snapshotId,
+    fullText,
+    charCount,
+    checkpointEveryN,
+    isPeriodicCheckpoint,
+    token,
+  } = opts;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`/api/docs/${encodeURIComponent(docId)}/snapshot-materialized`, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify({
+      snapshot_id: snapshotId,
+      full_text: fullText,
+      char_count: charCount,
+      checkpoint_every_n: checkpointEveryN,
+      is_latest: true,
+      is_periodic_checkpoint: isPeriodicCheckpoint,
+    }),
+    cache: "no-store",
+  });
+
+  if (response.status === 404 || response.status === 405 || response.status === 501) {
+    return { ok: false, unsupported: true };
+  }
+
+  if (!response.ok) {
+    const reason = await response.text();
+    throw new Error(reason || "Failed to upsert snapshot materialized text");
+  }
+
+  return { ok: true };
 }
 
 export async function fetchSnapshotHistory(opts: {
