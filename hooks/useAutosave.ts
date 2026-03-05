@@ -3,12 +3,7 @@
 import { useEffect } from "react";
 import type * as Y from "yjs";
 
-import { SNAPSHOT_CHECKPOINT_EVERY_N } from "@/lib/constants";
-import {
-  saveSnapshot,
-  type SaveSnapshotResult,
-  upsertSnapshotMaterializedText,
-} from "@/lib/snapshot";
+import { saveSnapshot, type SaveSnapshotResult } from "@/lib/snapshot";
 import type { SaveStatus } from "@/lib/types";
 
 type UseAutosaveProps = {
@@ -40,24 +35,6 @@ export function useAutosave({
         const result = await saveSnapshot({ docId, ydoc, charCount: getCharCount(), token });
         if (!disposed) onStatus("saved");
         onSaved?.(result);
-
-        if (result.saved && typeof result.snapshot_id === "number") {
-          const snapshotId = result.snapshot_id;
-          const periodic = snapshotId % SNAPSHOT_CHECKPOINT_EVERY_N === 0;
-          try {
-            await upsertSnapshotMaterializedText({
-              docId,
-              snapshotId,
-              fullText: ydoc.getText("codemirror").toString(),
-              charCount: getCharCount(),
-              checkpointEveryN: SNAPSHOT_CHECKPOINT_EVERY_N,
-              isPeriodicCheckpoint: periodic,
-              token,
-            });
-          } catch {
-            // Primary binary snapshot is already saved; keep autosave status as saved.
-          }
-        }
       } catch (error) {
         if (!disposed) {
           onStatus("unsaved");
