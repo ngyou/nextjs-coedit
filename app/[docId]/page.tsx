@@ -228,6 +228,7 @@ export default function DocPage() {
   }, []);
   const onHardLimit = useCallback(() => setShowLimit(true), []);
   const onSoftLimit = useCallback(() => setSoftWarned(true), []);
+  const getDocumentText = useCallback(() => runtimeRef.current?.ytext.toString() ?? "", []);
 
   if (!validDocId) {
     return (
@@ -244,7 +245,14 @@ export default function DocPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-4 sm:px-4 md:px-6">
       {name === "" ? <NamePrompt onComplete={setName} /> : null}
       {!unlocked && meta?.has_password ? <PasswordModal onSubmit={onAuth} error={authErr} /> : null}
-      {showShare ? <ShareModal docId={docId} onClose={() => setShowShare(false)} /> : null}
+      {showShare ? (
+        <ShareModal
+          docId={docId}
+          token={token}
+          getDocumentText={getDocumentText}
+          onClose={() => setShowShare(false)}
+        />
+      ) : null}
       {showDelete ? <DeleteModal onConfirm={onDelete} onClose={() => setShowDelete(false)} error={deleteErr} /> : null}
       {showLimit ? <CharLimitModal onClose={() => setShowLimit(false)} /> : null}
 
