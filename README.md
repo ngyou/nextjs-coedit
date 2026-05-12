@@ -9,13 +9,13 @@ Collaborative editor frontend built with Next.js App Router, CodeMirror 6, and Y
    - `pnpm install`
 3. Start dev server:
    - `pnpm dev`
-4. Open `http://localhost:3000`.
+4. Open `http://localhost:3016`.
 
 ## Environment Variables
 
 - `API_URL`
   - Server-side proxy target used by `app/api/[...path]/route.ts`.
-  - Example: `http://localhost:8000/api`
+  - Example: `http://localhost:8016/api`
 - `NEXT_PUBLIC_APP_URL`
   - Public app base URL used for sharing links.
 - `NEXT_PUBLIC_YJS_SIGNALING`

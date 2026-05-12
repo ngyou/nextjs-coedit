@@ -7,9 +7,9 @@
     "node": ">=20.10.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3016",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3016",
     "lint": "eslint"
   },
   "dependencies": {
