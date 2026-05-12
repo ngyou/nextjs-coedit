@@ -77,7 +77,7 @@ export default function HomePage() {
         />
       ) : null}
 
-      <h1 className="text-4xl font-semibold tracking-tight text-slate-900">Collaborative Editor</h1>
+      <h1 className="text-4xl font-semibold tracking-tight text-slate-900">CoEditor</h1>
       <p className="mt-2 text-slate-600">Create a document and share the link for real-time editing.</p>
       <p className="mt-1 text-sm text-slate-500">
         <Link href="/admin/login" className="underline">
